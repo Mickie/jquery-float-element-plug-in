@@ -207,7 +207,14 @@ function MouseMoveEvent(){
     ctx=canvas.getContext("2d");
     var oDiv;
     oDiv=document.getElementById("imagePreView");
-    var startX,startY,endX,endY,preX,preY;
+    startX=0;
+    startY=0;
+    preX=0;
+    preY=0;
+    var endX,endY;
+    var originalData=[];
+
+
 
 
     function setImgAlpha(a,penWidth,imgData){
@@ -223,12 +230,17 @@ function MouseMoveEvent(){
 
     $("canvas").bind("mousedown",function(e){
 
-        if(buttonId=="select"){
+        if(buttonId=="select" && e.which===1){
             var top=getY(oDiv);
             var left=getX(oDiv);
             down = 1;
-            startX=(e.clientX-left+document.body.scrollLeft)-2;
-            startY=(e.clientY-top+document.body.scrollTop)-2;
+            startX=(e.clientX-left+document.body.scrollLeft);
+            startY=(e.clientY-top+document.body.scrollTop);
+            preX=startX;
+            preY=startY;
+            endX=0;
+            endY=0;
+
         };
         if(buttonId=="wipe"){
             down = 1;
@@ -263,28 +275,72 @@ function MouseMoveEvent(){
 
     })
 
+   $("canvas").mousedown(function(e){
+     if(e.which === 3){
+         down=1;
+         var selectWidth=Math.sqrt((preX-startX)*(preX-startX));
+         var selectHeight=Math.sqrt((preY-startY)*(preY-startY));
+         if (selectWidth!==0){
+
+             var selectImgData=ctx.getImageData(startX,startY,selectWidth,selectHeight);
+
+             var selectData=selectImgData.data;
+
+
+             for(var j=0;j<=selectHeight;j++){
+                 for(var i=0;i<=selectWidth;i++){
+                     var pixelOffset= (j * selectWidth+ i) * 4;
+                     selectData[pixelOffset+3]=originalData[pixelOffset+3];
+                 }
+             }
+             ctx.putImageData(selectImgData,startX,startY);
+             down=0;
+         }
+     }
+    })
+
+    document.oncontextmenu=RightMouseDown;
+    function RightMouseDown() { return false;}
+
     $("canvas").bind("mousemove",function(e){
-        preX=0;
-        preY=0;
+        var top=getY(oDiv);
+        var left=getX(oDiv);
+
         if(buttonId=="select"){
             if(down==1){
-                var top=getY(oDiv);
-                var left=getX(oDiv);
+
+                //clear content
+                var selectWidth=Math.sqrt((preX-startX)*(preX-startX));
+                var selectHeight=Math.sqrt((preY-startY)*(preY-startY));
+                      if (selectWidth!==0){
+
+                        var selectImgData=ctx.getImageData(startX,startY,selectWidth,selectHeight);
+
+                        var selectData=selectImgData.data;
+
+
+                        for(var j=0;j<=selectHeight;j++){
+                            for(var i=0;i<=selectWidth;i++){
+                                var pixelOffset= (j * selectWidth+ i) * 4;
+                                selectData[pixelOffset+3]=originalData[pixelOffset+3];
+
+                            }
+                        }
+                        ctx.putImageData(selectImgData,startX,startY);
+                      }
 
                 endX = (e.clientX-left+document.body.scrollLeft);
                 endY = (e.clientY-top+document.body.scrollTop);
-
-//                if((endX>=preX)&&(endY>=preY)){
-
-                    var selectWidth=Math.sqrt((endX-startX)*(endX-startX));
-                    var selectHeight=Math.sqrt((endY-startY)*(endY-startY));
-                    var selectImgData=ctx.getImageData(startX,startY,selectWidth,selectHeight);
-                    var selectData=selectImgData.data;
-
+                var selectWidth=Math.sqrt((endX-startX)*(endX-startX));
+                var selectHeight=Math.sqrt((endY-startY)*(endY-startY));
+                var selectImgData=ctx.getImageData(startX,startY,selectWidth,selectHeight);
+                var selectData=selectImgData.data;
 
                     for(var j=0;j<selectHeight;j++){
                         for(var i=0;i<selectWidth;i++){
                             var pixelOffset= (j * selectWidth+ i) * 4;
+
+                            originalData[pixelOffset+3]= selectData[pixelOffset+3];
                             selectData[pixelOffset+3]=127;
 
                         }
@@ -292,103 +348,6 @@ function MouseMoveEvent(){
                     ctx.putImageData(selectImgData,startX,startY);
                     preX=endX;
                     preY=endY;
-
-
-//                }
-//
-//                if((endX>=preX)&&(endY<preY)){
-//                    var selectWidth=(endX-preX);
-//                    var selectHeight=(endY);
-//                    var selectImgData=ctx.getImageData(preX,startY,selectWidth,selectHeight);
-//                    var selectData=selectImgData.data;
-//
-//                    for(var j=0;j<selectHeight;j++){
-//                        for(var i=0;i<selectWidth;i++){
-//                            var pixelOffset=(j * selectWidth+ i) * 4;
-//                            selectData[pixelOffset+3]=127;
-//                        }
-//                    }
-//                    ctx.putImageData(selectImgData,preX,startY);
-//
-//
-//                    var selectWidth1=preX;
-//                    var selectHeight1=preY-endY;
-//                    var selectImgData1=ctx.getImageData(startX,endY,selectWidth1,selectHeight1);
-//                    var selectData1=selectImgData1.data;
-//
-//                    for(var j=0;j<selectHeight1;j++){
-//                        for(var i=0;i<selectWidth1;i++){
-//                            var pixelOffset=(j*selectWidth1+i)*4;
-//                            selectData1[pixelOffset+3]=255;
-//                        }
-//                    }
-//                    ctx.putImageData(selectData1,startX,endY);
-//                    preX=endX;
-//                    preY=endY;
-//
-//
-//                };
-//                if((endX<preX)&&(endY>=preY)){
-//                    var selectWidth=endX;
-//                    var selectHeight=endY-preY;
-//                    var selectImgData=ctx.getImageData((startX,preY,selectWidth,selectHeight));
-//                    var selectData=selectImgData.data;
-//
-//                    for(var j=0;j<selectHeight;j++){
-//                        for(var i=0;i<selectWidth;i++){
-//                            var pixelOffset=(j*selectWidth+i)*4;
-//                            selectData[pixelOffset+3]=127;
-//                        }
-//                    }
-//
-//                    ctx.putImageData(selectImgData,startX,preY);
-//
-//                    var selectWidth1=preX-endX;
-//                    var selectHeight1=preY;
-//                    var selectImgData1=ctx.getImageData(endX,startY,selectWidth1,selectHeight1);
-//                    var selectData1=selectImgData1.data;
-//                    for(var j=0;j<selectHeight1;j++){
-//                        for(var i=0;i<selectWidth1;i++){
-//                            var pixelOffset=(j*selectWidth1+i)*4;
-//                            selectData1[pixelOffset+3]=255;
-//                        }
-//                    }
-//                    ctx.putImageData(selectImgData1,endX,startY);
-//                    preX=endX;
-//                    preY=endY;
-//
-//
-//                };
-//
-//                if((endX<preX)&&(endY<=preY)){
-//                    var selectWidth=preX-endX;
-//                    var selectHeight=endY;
-//                    var selectImgData=ctx.getImageData((endX,startY,selectWidth,selectHeight));
-//                    var selectData=selectImgData.data;
-//                    for(var j=0;j<selectHeight;j++){
-//                        for(var i=0;i<selectWidth;i++){
-//                            var pixelOffset=(j*selectWidth+i)*4;
-//                            selectData[pixelOffset+3]=255;
-//                        }
-//                    }
-//                    ctx.putImageData(selectImgData,endX,startY);
-//
-//                    var selectWidth1=preX;
-//                    var selectHeight1=preY-endY;
-//                    var selectImgData1=ctx.getImageData((startX,endY,selectWidth1,selectHeight1));
-//                    var selectData1=selectImgData1.data;
-//                    for(var j=0;j<selectHeight1;j++){
-//                        for(var i=0;i<selectWidth1;i++){
-//                            var pixelOffset=(j*selectWidth1+i)*4;
-//                            selectData1[pixelOffset+3]=255;
-//                        }
-//                    }
-//                    ctx.putImageData(selectImgData1,startX,endY);
-//                    preX=endX;
-//                    preY=endY;
-//
-//
-//                }
 
 
             }
@@ -411,7 +370,6 @@ function MouseMoveEvent(){
             }
         };
 
-
         if(buttonId=="restore"){
             if(down == 1){
                 var top=getY(oDiv);
@@ -424,7 +382,6 @@ function MouseMoveEvent(){
                 var imageData=ctx.getImageData(newX,newY,d,d);
                 var data=imageData.data;
                 setImgAlpha(255,result,data);
-
                 ctx.putImageData(imageData,(newX),(newY));
             }
 
@@ -434,6 +391,11 @@ function MouseMoveEvent(){
 
     $("canvas").bind("mouseup",function(){
         down=0;
+
+//       endX=0;
+//        endY=0;
+//        startX=0
+//        startY=0;
     });
 }
 
@@ -451,16 +413,7 @@ $(function(){
     });
     $( "#amount" ).val( $( "#slider-range-max" ).slider( "value" ) );
 
-    var penCanvas=document.getElementById('showResult');
-    var theCtx=penCanvas.getContext('2d');
-    theCtx.fillStyle="#777777";
-    theCtx.beginPath();
-    var startPointX=penCanvas.width/2;
-    var startPointY=penCanvas.height/2;
 
-    theCtx.arc(startPointX,startPointY,result,0,Math.PI*2,true);
-    cxt.closePath();
-    cxt.fill();
 
 
 })
@@ -577,7 +530,7 @@ function saveToYellow(){
             <input type="text" id="amount" style="border:0; color:#f6931f; font-weight:bold;">
 
         </p>
-        <canvas id="showResult"></canvas>
+
         <div id="slider-range-max"></div>
 
 
